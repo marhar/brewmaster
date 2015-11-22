@@ -1,0 +1,84 @@
+#!/bin/sh
+help="""
+brewmaster -- manage homebrew on several machines
+https://github.com/marhar/brewmaster
+
+brewmaster report      -- show brewmaster status on your current machine
+brewmaster update      -- updates brew and upgrades all installed packages
+brewmaster sync        -- sync your homebrew config amongst all your machines
+brewmaster snap        -- update this machines brewmaster status
+
+configuration sharing is done via dropbox.
+
+note: first draft, command names subject to change.
+
+license as per the homebrew license.
+
+homebrew is a wonderful system for installing open source packages on Mac.
+https://github.com/Homebrew/homebrew
+"""
+
+H=`hostname|sed 's/[.].*//'`
+D=$HOME/Dropbox/Brewmaster
+TMPLIST=/tmp/Brewmaster.tmplist.$H.$$
+trap "rm -f $TMPLIST" 0
+
+test -d $D || mkdir -p $D
+
+#-----------------------------------------------------------------------
+if test $1. == report.; then
+
+    $0 snap
+    rm -f $TMPLIST
+    cat $D/*.list|sort -u >$TMPLIST
+
+    echo hosts:
+    for i in $D/*.list; do
+        echo ' ' `basename $i .list`
+    done
+    echo installed:
+    cat $TMPLIST | sed 's/^/  /'
+    for i in $D/*.list; do
+        BB=`basename $i .list`:
+        #echo diff `basename $i .list`:
+        diff $i $TMPLIST | awk 'NF > 1' | sed "s/^/$BB  /"
+    done
+    for i in `brew outdated --quiet`; do
+        echo ' ' outdated: $i
+    done
+
+#-----------------------------------------------------------------------
+elif test $1. == update.; then
+    brew update
+    for i in `brew outdated --quiet`; do
+        brew upgrade $i
+    done
+
+#-----------------------------------------------------------------------
+elif test $1. == sync.; then
+
+    $0 snap
+    rm -f $TMPLIST
+    cat $D/*.list|sort -u >$TMPLIST
+
+    for i in `diff $TMPLIST $D/$H.list | awk '$1 == "<" { print $2 }'`;do
+        echo installing $i...
+        brew install $i
+    done
+
+#-----------------------------------------------------------------------
+elif test $1. == snap.; then
+    F=$D/$H.list
+    rm -f $F
+
+    >$F
+    for i in `brew list`; do
+        echo $i >>$F
+    done
+
+#-----------------------------------------------------------------------
+else
+    echo usage: `basename $0` 'report | sync | snap'
+    exit 1
+
+fi
