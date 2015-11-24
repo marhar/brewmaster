@@ -19,8 +19,8 @@ https://github.com/Homebrew/homebrew
 """
 
 H=`hostname|sed 's/[.].*//'`
-D=$HOME/Dropbox/Brewmaster
-TMPLIST=/tmp/Brewmaster.tmplist.$H.$$
+D=$HOME/Dropbox/brewmaster
+TMPLIST=/tmp/brewmaster.tmplist.$H.$$
 trap "rm -f $TMPLIST" 0
 
 test -d $D || mkdir -p $D
